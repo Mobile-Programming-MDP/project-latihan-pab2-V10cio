@@ -1,0 +1,32 @@
+[
+  {
+    "nama": "Eka",
+    "umur": 27,
+    "alamat": {
+      "jalan": "Jl. Anggrek No. 8",
+      "kota": "Medan",
+      "provinsi": "Sumatera Utara"
+    },
+    "hobi": ["Bermain gitar", "Fotografi"]
+  },
+  {
+    "nama": "Fajar",
+    "umur": 32,
+    "alamat": {
+      "jalan": "Jl. Cendana No. 15",
+      "kota": "Yogyakarta",
+      "provinsi": "DI Yogyakarta"
+    },
+    "hobi": ["Panjat tebing", "Berkebun"]
+  },
+  {
+    "nama": "Gita",
+    "umur": 24,
+    "alamat": {
+      "jalan": "Jl. Raya No. 25",
+      "kota": "Makassar",
+      "provinsi": "Sulawesi Selatan"
+    },
+    "hobi": ["Menyanyi", "Yoga"]
+  }
+]
