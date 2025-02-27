@@ -4,7 +4,10 @@ import 'package:pilem/models/movie.dart';
 import 'package:pilem/services/api_service.dart';
 
 class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+
   @override
+  // ignore: library_private_types_in_public_api
   _HomeScreenState createState() => _HomeScreenState();
 }
 
@@ -25,9 +28,9 @@ class _HomeScreenState extends State<HomeScreen> {
     final List<Map<String, dynamic>> allMoviesData =
         await _apiService.getAllMovies();
     final List<Map<String, dynamic>> trendingMoviesData =
-        await _apiService.getTrendingMovie();
+        await _apiService.getTrendingMovies();
     final List<Map<String, dynamic>> popularMoviesData =
-        await _apiService.getPopularMovie();
+        await _apiService.getPopularMovies();
 
     setState(() {
       _allMovies = allMoviesData.map((e) => Movie.fromJson(e)).toList();
