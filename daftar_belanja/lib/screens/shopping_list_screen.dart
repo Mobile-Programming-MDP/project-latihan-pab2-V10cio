@@ -1,4 +1,5 @@
-import 'package:daftar_belanja/services/shopping_service.dart';
+// import 'package:daftar_belanja/services/shopping_service.dart';
+import 'package:daftar_belanja/services/shopping_services.dart';
 import 'package:flutter/material.dart';
 
 class ShoppingListScreen extends StatefulWidget {
@@ -15,9 +16,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Daftar Belanja'),
-      ),
+      appBar: AppBar(title: const Text('Daftar Belanja')),
       body: Column(
         children: [
           Padding(
@@ -27,8 +26,9 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                 Expanded(
                   child: TextField(
                     controller: _controller,
-                    decoration:
-                        const InputDecoration(hintText: 'Masukkan nama barang'),
+                    decoration: const InputDecoration(
+                      hintText: 'Masukkan nama barang',
+                    ),
                   ),
                 ),
                 IconButton(
@@ -64,13 +64,9 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                     },
                   );
                 } else if (snapshot.hasError) {
-                  return Center(
-                    child: Text('Error: ${snapshot.error}'),
-                  );
+                  return Center(child: Text('Error: ${snapshot.error}'));
                 } else {
-                  return const Center(
-                    child: CircularProgressIndicator(),
-                  );
+                  return const Center(child: CircularProgressIndicator());
                 }
               },
             ),

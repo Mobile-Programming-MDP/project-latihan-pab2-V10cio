@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "205587571774",
+    "firebase_url": "https://cio-app-df610-default-rtdb.firebaseio.com",
+    "project_id": "cio-app-df610",
+    "storage_bucket": "cio-app-df610.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:205587571774:android:08159a7a6086328d1d5d6f",
+        "android_client_info": {
+          "package_name": "com.example.daftar_belanja"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCe_nLX6-CQ9IrIjdIJnQ9_K2FUA91Ncdg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
