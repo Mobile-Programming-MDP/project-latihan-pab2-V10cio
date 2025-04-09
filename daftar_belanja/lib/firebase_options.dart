@@ -90,4 +90,5 @@ class DefaultFirebaseOptions {
     storageBucket: 'cio-app-df610.firebasestorage.app',
     measurementId: 'G-8N5Q8KQR23',
   );
+
 }
