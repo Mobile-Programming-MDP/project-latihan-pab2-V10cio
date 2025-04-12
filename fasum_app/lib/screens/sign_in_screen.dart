@@ -4,7 +4,7 @@ import 'package:fasum_app/screens/home_screen.dart';
 import 'package:fasum_app/screens/sign_up_screen.dart';
 
 class SignInScreen extends StatefulWidget {
-  const SignInScreen({Key? key}) : super(key: key);
+  const SignInScreen({super.key});
 
   @override
   SignInScreenState createState() => SignInScreenState();

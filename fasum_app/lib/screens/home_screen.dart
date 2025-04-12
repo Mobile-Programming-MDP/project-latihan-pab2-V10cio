@@ -15,7 +15,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (mounted) { // Pastikan widget masih ada di tree
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => SignInScreen()),
+        MaterialPageRoute(builder: (context) => const SignInScreen()),
       );
     }
   }
