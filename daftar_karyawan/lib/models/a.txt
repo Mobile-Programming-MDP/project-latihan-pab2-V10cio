@@ -1,0 +1,111 @@
+class MyHomePage extends StatefulWidget {
+  const MyHomePage({super.key});
+
+  @override
+  State<MyHomePage> createState() => _MyHomePageState();
+}
+
+class _MyHomePageState extends State<MyHomePage> {
+  late Future<List<Karyawan>> _karyawanFuture;
+  List<Karyawan> _allKaryawan = [];
+  List<Karyawan> _filteredKaryawan = [];
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _karyawanFuture = _readJsonData();
+    _karyawanFuture.then((data) {
+      setState(() {
+        _allKaryawan = data;
+        _filteredKaryawan = data;
+      });
+    });
+
+    _searchController.addListener(_onSearchChanged);
+  }
+
+  @override
+  void dispose() {
+    _searchController.removeListener(_onSearchChanged);
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _onSearchChanged() {
+    String query = _searchController.text.toLowerCase();
+    setState(() {
+      _filteredKaryawan = _allKaryawan.where((karyawan) {
+        return karyawan.nama.toLowerCase().contains(query);
+      }).toList();
+    });
+  }
+
+  Future<List<Karyawan>> _readJsonData() async {
+    final String response = await rootBundle.loadString('assets/karyawan.json');
+    final List<dynamic> data = json.decode(response);
+    return data.map((json) => Karyawan.fromJson(json)).toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        title: const Text('Daftar Karyawan'),
+      ),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: TextField(
+              controller: _searchController,
+              decoration: const InputDecoration(
+                labelText: 'Cari berdasarkan nama',
+                prefixIcon: Icon(Icons.search),
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ),
+          Expanded(
+            child: FutureBuilder(
+              future: _karyawanFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                } else if (snapshot.hasError) {
+                  return Center(child: Text('${snapshot.error}'));
+                } else {
+                  return ListView.builder(
+                    itemCount: _filteredKaryawan.length,
+                    itemBuilder: (context, index) {
+                      final karyawan = _filteredKaryawan[index];
+                      return ListTile(
+                        title: Text(
+                          karyawan.nama,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Umur: ${karyawan.umur}'),
+                            Text('Alamat: ${karyawan.alamat.jalan}, '
+                                '${karyawan.alamat.kota}, '
+                                '${karyawan.alamat.provinsi}'),
+                            Text('Hobi: ${karyawan.hobi.join(", ")}'),
+                          ],
+                        ),
+                      );
+                    },
+                  );
+                }
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+ini dilengkapi dengan fitur search

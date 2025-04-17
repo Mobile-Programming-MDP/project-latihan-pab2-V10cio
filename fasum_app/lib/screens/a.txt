@@ -1,0 +1,154 @@
+dugaan bahwa ini adalah ditetapi dengan authentication
+
+import 'dart:convert';
+
+import 'package:fasum_app/screens/sign_in_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
+// MODEL KARYAWAN
+class Karyawan {
+  final String nama;
+  final int umur;
+  final Alamat alamat;
+  final List<String> hobi;
+
+  Karyawan({
+    required this.nama,
+    required this.umur,
+    required this.alamat,
+    required this.hobi,
+  });
+
+  factory Karyawan.fromJson(Map<String, dynamic> json) {
+    return Karyawan(
+      nama: json['nama'],
+      umur: json['umur'],
+      alamat: Alamat.fromJson(json['alamat']),
+      hobi: List<String>.from(json['hobi']),
+    );
+  }
+}
+
+class Alamat {
+  final String jalan;
+  final String kota;
+  final String provinsi;
+
+  Alamat({required this.jalan, required this.kota, required this.provinsi});
+
+  factory Alamat.fromJson(Map<String, dynamic> json) {
+    return Alamat(
+      jalan: json['jalan'],
+      kota: json['kota'],
+      provinsi: json['provinsi'],
+    );
+  }
+}
+
+// HOME SCREEN
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+
+  @override
+  _HomeScreenState createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  Future<void> signOut() async {
+    await FirebaseAuth.instance.signOut();
+    if (mounted) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => const SignInScreen()),
+      );
+    }
+  }
+
+  List<Karyawan> _allKaryawan = [];
+  List<Karyawan> _filteredKaryawan = [];
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadJsonData();
+    _searchController.addListener(_onSearchChanged);
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _onSearchChanged() {
+    String query = _searchController.text.toLowerCase();
+    setState(() {
+      _filteredKaryawan = _allKaryawan.where((k) {
+        return k.nama.toLowerCase().contains(query);
+      }).toList();
+    });
+  }
+
+  Future<void> _loadJsonData() async {
+    final String response = await rootBundle.loadString('assets/karyawan.json');
+    final List<dynamic> data = json.decode(response);
+    final List<Karyawan> karyawanList =
+        data.map((json) => Karyawan.fromJson(json)).toList();
+
+    setState(() {
+      _allKaryawan = karyawanList;
+      _filteredKaryawan = karyawanList;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Home"),
+        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        actions: [
+          IconButton(
+            onPressed: signOut,
+            icon: const Icon(Icons.logout),
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: TextField(
+              controller: _searchController,
+              decoration: const InputDecoration(
+                labelText: 'Cari nama karyawan',
+                prefixIcon: Icon(Icons.search),
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ),
+          Expanded(
+            child: _filteredKaryawan.isEmpty
+                ? const Center(child: Text("Tidak ada data ditemukan."))
+                : ListView.builder(
+                    itemCount: _filteredKaryawan.length,
+                    itemBuilder: (context, index) {
+                      final k = _filteredKaryawan[index];
+                      return ListTile(
+                        title: Text(
+                          k.nama,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        subtitle: Text(
+                            'Umur: ${k.umur}\nAlamat: ${k.alamat.jalan}, ${k.alamat.kota}, ${k.alamat.provinsi}\nHobi: ${k.hobi.join(', ')}'),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+}
