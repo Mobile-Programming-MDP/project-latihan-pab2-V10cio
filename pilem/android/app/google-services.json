@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "1033539643655",
+    "firebase_url": "https://p-pab-app-default-rtdb.firebaseio.com",
+    "project_id": "p-pab-app",
+    "storage_bucket": "p-pab-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1033539643655:android:96a2df3563511200c6fda2",
+        "android_client_info": {
+          "package_name": "com.example.pilem"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCdivKUang8nRfKPR0th2jsMWGOr02hs_c"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
