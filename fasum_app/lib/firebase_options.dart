@@ -85,4 +85,5 @@ class DefaultFirebaseOptions {
     storageBucket: 'fasum-app-51f31.firebasestorage.app',
     measurementId: 'G-PS80JFDS6K',
   );
+
 }
