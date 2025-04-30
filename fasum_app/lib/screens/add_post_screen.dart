@@ -100,8 +100,7 @@ class _AddPostScreenState extends State<AddPostScreen> {
         'latitude': _latitude,
         'longitude': _longitude,
         'fullName': fullName,
-        'userId': uid, // optional: jika ingin simpan UID
-        juga
+        'userId': uid, // optional: jika ingin simpan UID juga
       });
       if (!mounted) return;
       Navigator.pop(context);
