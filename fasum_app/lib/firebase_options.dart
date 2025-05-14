@@ -42,12 +42,12 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions web = FirebaseOptions(
     apiKey: 'AIzaSyA0BAFk_6YD5NDxEE4bTLmdvnwzBVnbldE',
-    appId: '1:728850357033:web:b9143ceee93e8a433d3538',
+    appId: '1:728850357033:web:7a344bade1ee1e023d3538',
     messagingSenderId: '728850357033',
     projectId: 'fasum-app-51f31',
     authDomain: 'fasum-app-51f31.firebaseapp.com',
     storageBucket: 'fasum-app-51f31.firebasestorage.app',
-    measurementId: 'G-NHJQ02W1WD',
+    measurementId: 'G-PS80JFDS6K',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
@@ -78,12 +78,11 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions windows = FirebaseOptions(
     apiKey: 'AIzaSyA0BAFk_6YD5NDxEE4bTLmdvnwzBVnbldE',
-    appId: '1:728850357033:web:7a344bade1ee1e023d3538',
+    appId: '1:728850357033:web:ba1b6de06c877f0f3d3538',
     messagingSenderId: '728850357033',
     projectId: 'fasum-app-51f31',
     authDomain: 'fasum-app-51f31.firebaseapp.com',
     storageBucket: 'fasum-app-51f31.firebasestorage.app',
-    measurementId: 'G-PS80JFDS6K',
+    measurementId: 'G-NS3R6EGEGJ',
   );
-
 }

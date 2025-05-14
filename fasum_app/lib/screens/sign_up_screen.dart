@@ -71,11 +71,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 email: _emailController.text,
                 password: _passwordController.text);
 
+        //Simpan Data Pengguna ke Firestore
         await FirebaseFirestore.instance
             .collection("users")
             .doc(newUser.user!.uid)
             .set({
-          'fullName': _fullNameController.text,
+          'fullName': _fullNameController.text.trim(),
           'email': _emailController.text,
           'createdAt': Timestamp.now()
         });

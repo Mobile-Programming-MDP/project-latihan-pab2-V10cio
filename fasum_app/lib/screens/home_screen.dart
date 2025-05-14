@@ -3,9 +3,10 @@ import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fasum/screens/add_post_screen.dart';
 import 'package:fasum/screens/detail_screen.dart';
+import 'package:fasum/screens/edit_post_screen.dart';
+import 'package:fasum/screens/my_post_screen.dart';
 import 'package:fasum/screens/sign_in_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -17,6 +18,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  String? _currentUserId;
   String? selectedCategory;
   //ambil dari add_post_screen
   List<String> categories = [
@@ -116,6 +118,232 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  //hapus data
+  Future<void> _deletePost(String postId) async {
+    final confirmDelete = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Konfirmasi'),
+          content: const Text('Apakah Anda yakin ingin menghapus laporan ini?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Tidak'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Ya'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmDelete == true && mounted) {
+      // Implement delete functionality
+      FirebaseFirestore.instance.collection("posts").doc(postId).delete();
+    }
+  }
+
+  //like post
+  void _toggleLike(String postId) async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) return;
+
+    final postRef = FirebaseFirestore.instance.collection("posts").doc(postId);
+    final postSnapshot = await postRef.get();
+
+    if (postSnapshot.exists) {
+      final data = postSnapshot.data()!;
+      final likes = List<String>.from(data['likes'] ?? []);
+
+      if (likes.contains(currentUser.uid)) {
+        // Unlike the post
+        likes.remove(currentUser.uid);
+      } else {
+        // Like the post
+        likes.add(currentUser.uid);
+      }
+
+      await postRef.update({'likes': likes});
+    }
+  }
+
+  void _showComments(String postId) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        final TextEditingController commentController = TextEditingController();
+
+        return SafeArea(
+          child: Padding(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(context).viewInsets.bottom,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: Text(
+                    'Comments',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                Expanded(
+                  child: StreamBuilder(
+                    stream: FirebaseFirestore.instance
+                        .collection('posts')
+                        .doc(postId)
+                        .collection('comments')
+                        .orderBy('createdAt', descending: true)
+                        .snapshots(),
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+
+                      final comments = snapshot.data!.docs;
+
+                      if (comments.isEmpty) {
+                        return const Center(
+                          child: Text('No comments yet.'),
+                        );
+                      }
+
+                      return ListView.builder(
+                        itemCount: comments.length,
+                        itemBuilder: (context, index) {
+                          final commentData = comments[index].data();
+                          final commentText = commentData['text'] ?? '';
+                          final commenterName =
+                              commentData['name'] ?? 'Anonymous';
+                          final createdAt = commentData['createdAt']?.toDate();
+
+                          return ListTile(
+                            title: Text(commenterName),
+                            subtitle: Text(commentText),
+                            trailing: createdAt != null
+                                ? Text(
+                                    DateFormat('dd/MM/yyyy HH:mm')
+                                        .format(createdAt),
+                                    style: const TextStyle(fontSize: 12),
+                                  )
+                                : null,
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: commentController,
+                          decoration: const InputDecoration(
+                            hintText: 'Add a comment...',
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.send),
+                        onPressed: () async {
+                          final currentUser = FirebaseAuth.instance.currentUser;
+                          if (currentUser == null ||
+                              commentController.text.isEmpty) {
+                            return;
+                          }
+
+                          final commentText = commentController.text.trim();
+                          commentController.clear();
+
+                          final uid = FirebaseAuth.instance.currentUser?.uid;
+                          final userDoc = await FirebaseFirestore.instance
+                              .collection('users')
+                              .doc(uid)
+                              .get();
+                          final fullName =
+                              userDoc.data()?['fullName'] ?? 'Anonymous';
+
+                          await FirebaseFirestore.instance
+                              .collection('posts')
+                              .doc(postId)
+                              .collection('comments')
+                              .add({
+                            'text': commentText,
+                            'name': fullName,
+                            'userId': uid,
+                            'createdAt': Timestamp.now(),
+                          });
+
+                          final commentRef = FirebaseFirestore.instance
+                              .collection("posts")
+                              .doc(postId);
+                          final commentSnapshot = await commentRef.get();
+
+                          if (commentSnapshot.exists) {
+                            final data = commentSnapshot.data()!;
+                            final comments =
+                                List<String>.from(data['comments'] ?? []);
+
+                            if (!comments.contains(currentUser.uid)) {
+                              comments.add(currentUser.uid);
+                            }
+
+                            await commentRef.update({'comments': comments});
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Stream<QuerySnapshot<Map<String, dynamic>>>? _getPostsStream() {
+    if (selectedCategory == null) {
+      // Return all posts if no category is selected
+      print("Filter by user id $_currentUserId");
+      return FirebaseFirestore.instance
+          .collection("posts")
+          .where("userId", isNotEqualTo: _currentUserId)
+          .orderBy('createdAt', descending: true)
+          .snapshots();
+    } else {
+      // Return posts filtered by the selected category
+      print("Filter by Category $selectedCategory");
+      return FirebaseFirestore.instance
+          .collection("posts")
+          .where("category", isEqualTo: selectedCategory)
+          .where("userId", isNotEqualTo: _currentUserId)
+          .orderBy('createdAt', descending: true)
+          .snapshots();
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser != null) {
+      _currentUserId = currentUser.uid;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -140,20 +368,37 @@ class _HomeScreenState extends State<HomeScreen> {
           setState(() {});
         },
         child: StreamBuilder(
-          stream: FirebaseFirestore.instance
-              .collection("posts")
-              .orderBy('createdAt', descending: true)
-              .snapshots(),
+          key: const ValueKey("postsStream"),
+          stream: _getPostsStream(),
           builder: (context, snapshot) {
-            if (!snapshot.hasData) {
+            print("Start");
+            //print("Data " + snapshot.data!.docs.length.toString());
+            print("Has Data ${snapshot.hasData}");
+            print("Category $selectedCategory");
+            //print("Has Data ${snapshot.hasData}");
+            //print(snapshot.data?.docs);
+
+            if (snapshot.hasError) {
+              print("Trapped in has error ${!snapshot.hasData}");
+              print("${snapshot.error}");
+
+              return Center(child: Text('Error: ${snapshot.error}'));
+            }
+
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              print("Trapped in Laoding Data ${!snapshot.hasData}");
+              //print("Data " + snapshot.data!.docs.length.toString());
               return const Center(child: CircularProgressIndicator());
             }
 
-            final posts = snapshot.data!.docs.where((doc) {
-              final data = doc.data();
-              final category = data['category'] ?? 'Lainnya';
-              return selectedCategory == null || selectedCategory == category;
-            }).toList();
+            final posts = snapshot.data!.docs;
+            //.where((doc) {
+            //   final data = doc.data();
+            //   final category = data['category'] ?? 'Lainnya';
+            //   return true;
+            //   //return selectedCategory == null || selectedCategory == category;
+            // });
+            //.toList();
 
             if (posts.isEmpty) {
               return const Center(
@@ -174,7 +419,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 final latitude = data['latitude'];
                 final longitude = data['longitude'];
                 final category = data['category'] ?? 'Lainnya';
-                final currentUser = FirebaseAuth.instance.currentUser;
                 final userId = data['userId'] ?? "";
                 //parse ke DateTime
                 final createdAt = DateTime.parse(createdAtStr);
@@ -242,110 +486,160 @@ class _HomeScreenState extends State<HomeScreen> {
                                         ),
                                       ),
                                       const SizedBox(height: 6),
+                                      Text(category)
                                     ],
                                   ),
                                   Row(
                                     crossAxisAlignment: CrossAxisAlignment.end,
                                     children: [
-                                      IconButton(
-                                          onPressed: () {},
-                                          icon: Icon(Icons.thumb_up)),
-                                      IconButton(
-                                          onPressed: () {},
-                                          icon: Icon(Icons.comment)),
-                                      if (currentUser != null &&
-                                          currentUser.uid == userId)
-                                        IconButton(
-                                          onPressed: () {
-                                            showModalBottomSheet(
-                                              context: context,
-                                              shape:
-                                                  const RoundedRectangleBorder(
-                                                borderRadius:
-                                                    BorderRadius.vertical(
-                                                  top: Radius.circular(24),
+                                      //Like Button
+                                      Row(
+                                        children: [
+                                          GestureDetector(
+                                            onTap: () {
+                                              _toggleLike(posts[index]
+                                                  .id); // Panggil fungsi toggleLike
+                                            },
+                                            child: Icon(
+                                              Icons.thumb_up,
+                                              size: 20,
+                                              color: (data['likes'] ?? [])
+                                                      .contains(_currentUserId)
+                                                  ? Colors.blue
+                                                  : Colors.grey,
+                                            ),
+                                          ),
+                                          if ((data['likes'] ?? []).length > 0)
+                                            Row(
+                                              children: [
+                                                SizedBox(
+                                                  width: 8,
                                                 ),
-                                              ),
-                                              builder: (context) {
-                                                return SafeArea(
-                                                  child: Column(
-                                                    mainAxisSize:
-                                                        MainAxisSize.min,
-                                                    children: [
-                                                      ListTile(
-                                                        leading: const Icon(
-                                                            Icons.edit),
-                                                        title:
-                                                            const Text('Edit'),
-                                                        onTap: () {
-                                                          Navigator.pop(
-                                                              context); //close the modal
-                                                          // Navigate to edit screen or implement edit functionality
-                                                        },
-                                                      ),
-                                                      ListTile(
-                                                        leading: const Icon(
-                                                            Icons.delete),
-                                                        title: const Text(
-                                                            'Delete'),
-                                                        onTap: () async {
-                                                          Navigator.pop(
-                                                              context);
-                                                          final confirmDelete =
-                                                              await showDialog<
-                                                                  bool>(
-                                                            context: context,
-                                                            builder: (context) {
-                                                              return AlertDialog(
-                                                                title: const Text(
-                                                                    'Konfirmasi'),
-                                                                content: const Text(
-                                                                    'Apakah Anda yakin ingin menghapus laporan ini?'),
-                                                                actions: [
-                                                                  TextButton(
-                                                                    onPressed: () =>
-                                                                        Navigator.pop(
-                                                                            context,
-                                                                            false),
-                                                                    child: const Text(
-                                                                        'Tidak'),
+                                                Text(
+                                                    '${(data['likes'] ?? []).length}', // Tampilkan jumlah likes
+                                                    style: const TextStyle(
+                                                        fontSize: 12)),
+                                              ],
+                                            ),
+                                        ],
+                                      ),
+                                      const SizedBox(
+                                        width: 16,
+                                      ),
+                                      //Comment Button
+                                      Row(
+                                        children: [
+                                          GestureDetector(
+                                            onTap: () {
+                                              // Implement comment functionality
+                                              _showComments(posts[index].id);
+                                            },
+                                            child: Icon(
+                                              Icons.comment,
+                                              size: 20,
+                                              color: (data['comments'] ?? [])
+                                                      .contains(_currentUserId)
+                                                  ? Colors.blue
+                                                  : Colors.grey,
+                                            ),
+                                          ),
+                                          if ((data['comments'] ?? []).length >
+                                              0)
+                                            Row(
+                                              children: [
+                                                SizedBox(
+                                                  width: 8,
+                                                ),
+                                                Text(
+                                                    '${(data['comments'] ?? []).length}', // Tampilkan jumlah komentar
+                                                    style: const TextStyle(
+                                                        fontSize: 12)),
+                                              ],
+                                            ),
+                                        ],
+                                      ),
+
+                                      //Menu Edit dan Hapus
+                                      if (_currentUserId == userId)
+                                        Row(
+                                          children: [
+                                            const SizedBox(
+                                              width: 8,
+                                            ),
+                                            GestureDetector(
+                                              onTap: () {
+                                                showModalBottomSheet(
+                                                  context: context,
+                                                  shape:
+                                                      const RoundedRectangleBorder(
+                                                    borderRadius:
+                                                        BorderRadius.vertical(
+                                                      top: Radius.circular(24),
+                                                    ),
+                                                  ),
+                                                  builder: (context) {
+                                                    return SafeArea(
+                                                      child: Column(
+                                                        mainAxisSize:
+                                                            MainAxisSize.min,
+                                                        children: [
+                                                          //Menu Edit
+                                                          ListTile(
+                                                            leading: const Icon(
+                                                                Icons.edit),
+                                                            title: const Text(
+                                                                'Edit'),
+                                                            onTap: () {
+                                                              Navigator.pop(
+                                                                  context); //close the modal
+
+                                                              // Navigate to edit screen or implement edit functionality
+                                                              Navigator.push(
+                                                                context,
+                                                                MaterialPageRoute(
+                                                                  builder:
+                                                                      (context) =>
+                                                                          EditPostScreen(
+                                                                    postId:
+                                                                        posts[index]
+                                                                            .id,
+                                                                    imageBase64:
+                                                                        imageBase64,
+                                                                    description:
+                                                                        description,
+                                                                    category:
+                                                                        category,
                                                                   ),
-                                                                  TextButton(
-                                                                    onPressed: () =>
-                                                                        Navigator.pop(
-                                                                            context,
-                                                                            true),
-                                                                    child:
-                                                                        const Text(
-                                                                            'Ya'),
-                                                                  ),
-                                                                ],
+                                                                ),
                                                               );
                                                             },
-                                                          );
-
-                                                          if (confirmDelete ==
-                                                                  true &&
-                                                              mounted) {
-                                                            // Implement delete functionality
-                                                            FirebaseFirestore
-                                                                .instance
-                                                                .collection(
-                                                                    "posts")
-                                                                .doc(
-                                                                    posts[index]
-                                                                        .id)
-                                                                .delete();
-                                                          }
-                                                        },
+                                                          ),
+                                                          //Menu Hapus
+                                                          ListTile(
+                                                            leading: const Icon(
+                                                                Icons.delete),
+                                                            title: const Text(
+                                                                'Delete'),
+                                                            onTap: () async {
+                                                              Navigator.pop(
+                                                                  context);
+                                                              _deletePost(
+                                                                  posts[index]
+                                                                      .id);
+                                                            },
+                                                          ),
+                                                        ],
                                                       ),
-                                                    ],
-                                                  ),
+                                                    );
+                                                  },
                                                 );
                                               },
-                                            );
-                                          },
-                                          icon: const Icon(Icons.more_vert),
+                                              child: const Icon(
+                                                Icons.more_vert,
+                                                size: 20,
+                                              ),
+                                            ),
+                                          ],
                                         )
                                     ],
                                   )
@@ -368,13 +662,29 @@ class _HomeScreenState extends State<HomeScreen> {
           },
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (context) => AddPostScreen()),
-          );
-        },
-        child: const Icon(Icons.add),
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          FloatingActionButton(
+            heroTag: "myPostButton",
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (context) => MyPostsScreen()),
+              );
+            },
+            child: const Icon(Icons.person),
+          ),
+          const SizedBox(height: 16),
+          FloatingActionButton(
+            heroTag: "addPostButton",
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (context) => AddPostScreen()),
+              );
+            },
+            child: const Icon(Icons.add),
+          ),
+        ],
       ),
     );
   }
