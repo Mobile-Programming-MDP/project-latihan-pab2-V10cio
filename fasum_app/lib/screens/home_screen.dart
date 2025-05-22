@@ -7,8 +7,10 @@ import 'package:fasum/screens/edit_post_screen.dart';
 import 'package:fasum/screens/my_post_screen.dart';
 import 'package:fasum/screens/sign_in_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:http/http.dart' as http;
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -147,6 +149,25 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   //like post
+  Future<void> sendNotificationToTopic(String body, String senderName) async {
+    final url = Uri.parse(
+        'https://cio-fs-cloud.vercel.app/send-to-topic'); //ganti dengan url vercel masing-masing
+    final response = await http.post(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        "topic": "berita-fasum",
+        "title": "🔔 Laporan Baru",
+        "body": body,
+        "senderName": senderName,
+        "senderPhotoUrl":
+            "https://t3.ftcdn.net/jpg/03/53/83/92/360_F_353839266_8yqhN0548cGxrl4VOxngsiJzDgrDHxjG.jpg",
+      }),
+    );
+  }
+
   void _toggleLike(String postId) async {
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) return;
@@ -335,10 +356,19 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  void _updateToken() async {
+    final user = await FirebaseAuth.instance.currentUser;
+    final token = await FirebaseMessaging.instance.getAPNSToken();
+    await FirebaseFirestore.instance
+         .collection('users')
+         .doc(user!.uid).update('token': token);
+  }
+
   @override
   void initState() {
     super.initState();
     final currentUser = FirebaseAuth.instance.currentUser;
+    _updateToken();
     if (currentUser != null) {
       _currentUserId = currentUser.uid;
     }
